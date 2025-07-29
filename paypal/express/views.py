@@ -278,7 +278,7 @@ class SuccessResponseView(PaymentDetailsView):
         # Pass the user email so it can be stored with the order
 
         # We want to preserve the guest email from the Oscar checkout form
-        # so do not overwrite it with the PayPal email.
+        # so we do not overwrite it with the PayPal email.
         # submission['order_kwargs']['guest_email'] = self.txn.value('EMAIL')
 
         # Pass PP params
