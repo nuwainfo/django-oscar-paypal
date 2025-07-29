@@ -17,7 +17,8 @@ from oscar.core.loading import get_class, get_model
 
 from paypal.exceptions import PayPalError
 from paypal.express.exceptions import (
-    EmptyBasketException, InvalidBasket, MissingShippingAddressException, MissingShippingMethodException)
+    EmptyBasketException, InvalidBasket, MissingShippingAddressException, MissingShippingMethodException
+)
 from paypal.express.facade import confirm_transaction, fetch_transaction_details, get_paypal_url
 from paypal.express.gateway import buyer_pays_on_paypal
 
@@ -94,8 +95,8 @@ class RedirectView(CheckoutSessionMixin, RedirectView):
 
         params = {
             'basket': basket,
-            'shipping_methods': []          # setup a default empty list
-        }                                   # to support no_shipping
+            'shipping_methods': [] # setup a default empty list
+        } # to support no_shipping
 
         user = self.request.user
         if self.as_payment_method:
@@ -105,8 +106,7 @@ class RedirectView(CheckoutSessionMixin, RedirectView):
                 if not shipping_addr:
                     raise MissingShippingAddressException()
 
-                shipping_method = self.get_shipping_method(
-                    basket, shipping_addr)
+                shipping_method = self.get_shipping_method(basket, shipping_addr)
                 if not shipping_method:
                     raise MissingShippingMethodException()
 
@@ -118,8 +118,7 @@ class RedirectView(CheckoutSessionMixin, RedirectView):
             # Maik doubts that this code ever worked. Assigning
             # shipping method instances to Paypal params
             # isn't going to work, is it?
-            shipping_methods = Repository().get_shipping_methods(
-                user=user, basket=basket, request=self.request)
+            shipping_methods = Repository().get_shipping_methods(user=user, basket=basket, request=self.request)
             params['shipping_methods'] = shipping_methods
 
         if settings.DEBUG:
@@ -145,11 +144,11 @@ class CancelResponseView(RedirectView):
     permanent = False
 
     def get(self, request, *args, **kwargs):
-        basket = get_object_or_404(Basket, id=kwargs['basket_id'],
-                                   status=Basket.FROZEN)
+        basket = get_object_or_404(Basket, id=kwargs['basket_id'], status=Basket.FROZEN)
         basket.thaw()
-        logger.info("Payment cancelled (token %s) - basket #%s thawed",
-                    request.GET.get('token', '<no token>'), basket.id)
+        logger.info(
+            "Payment cancelled (token %s) - basket #%s thawed", request.GET.get('token', '<no token>'), basket.id
+        )
         return super(CancelResponseView, self).get(request, *args, **kwargs)
 
     def get_redirect_url(self, **kwargs):
@@ -203,8 +202,8 @@ class SuccessResponseView(PaymentDetailsView):
             return self.submit(**self.build_submission(basket=kwargs['basket']))
 
         logger.info(
-            "Basket #%s - showing preview with payer ID %s and token %s",
-            kwargs['basket'].id, self.payer_id, self.token)
+            "Basket #%s - showing preview with payer ID %s and token %s", kwargs['basket'].id, self.payer_id, self.token
+        )
 
         return super(SuccessResponseView, self).get(request, *args, **kwargs)
 
@@ -248,7 +247,7 @@ class SuccessResponseView(PaymentDetailsView):
         payment details view for placing the order.
         """
         if buyer_pays_on_paypal():
-            return HttpResponseBadRequest()  # we don't expect any user here if we let users buy on PayPal
+            return HttpResponseBadRequest() # we don't expect any user here if we let users buy on PayPal
 
         try:
             self.payer_id = request.POST['payer_id']
@@ -275,10 +274,13 @@ class SuccessResponseView(PaymentDetailsView):
         return self.submit(**submission)
 
     def build_submission(self, **kwargs):
-        submission = super(
-            SuccessResponseView, self).build_submission(**kwargs)
+        submission = super(SuccessResponseView, self).build_submission(**kwargs)
         # Pass the user email so it can be stored with the order
-        submission['order_kwargs']['guest_email'] = self.txn.value('EMAIL')
+
+        # We want to preserve the guest email from the Oscar checkout form
+        # so do not overwrite it with the PayPal email.
+        # submission['order_kwargs']['guest_email'] = self.txn.value('EMAIL')
+
         # Pass PP params
         submission['payment_kwargs']['payer_id'] = self.payer_id
         submission['payment_kwargs']['token'] = self.token
@@ -292,24 +294,24 @@ class SuccessResponseView(PaymentDetailsView):
         """
         try:
             confirm_txn = confirm_transaction(
-                kwargs['payer_id'], kwargs['token'], kwargs['txn'].amount,
-                kwargs['txn'].currency)
+                kwargs['payer_id'], kwargs['token'], kwargs['txn'].amount, kwargs['txn'].currency
+            )
         except PayPalError:
             raise UnableToTakePayment()
         if not confirm_txn.is_successful:
             raise UnableToTakePayment()
 
         # Record payment source and event
-        source_type, is_created = SourceType.objects.get_or_create(
-            name='PayPal')
-        source = Source(source_type=source_type,
-                        currency=confirm_txn.currency,
-                        amount_allocated=confirm_txn.amount,
-                        amount_debited=confirm_txn.amount,
-                        reference=confirm_txn.token)
+        source_type, is_created = SourceType.objects.get_or_create(name='PayPal')
+        source = Source(
+            source_type=source_type,
+            currency=confirm_txn.currency,
+            amount_allocated=confirm_txn.amount,
+            amount_debited=confirm_txn.amount,
+            reference=confirm_txn.token
+        )
         self.add_payment_source(source)
-        self.add_payment_event('Settled', confirm_txn.amount,
-                               reference=confirm_txn.correlation_id)
+        self.add_payment_event('Settled', confirm_txn.amount, reference=confirm_txn.correlation_id)
 
     def get_shipping_address(self, basket):
         """
@@ -341,8 +343,8 @@ class SuccessResponseView(PaymentDetailsView):
 
     def _get_shipping_method_by_name(self, name, basket, shipping_address=None):
         methods = Repository().get_shipping_methods(
-            basket=basket, user=self.request.user,
-            shipping_addr=shipping_address, request=self.request)
+            basket=basket, user=self.request.user, shipping_addr=shipping_address, request=self.request
+        )
         for method in methods:
             if method.name == name:
                 return method
@@ -361,8 +363,7 @@ class SuccessResponseView(PaymentDetailsView):
         charge_excl_tax = charge_incl_tax
         name = self.txn.value('SHIPPINGOPTIONNAME')
 
-        session_method = super(SuccessResponseView, self).get_shipping_method(
-            basket, shipping_address, **kwargs)
+        session_method = super(SuccessResponseView, self).get_shipping_method(basket, shipping_address, **kwargs)
         if not session_method or (name and name != session_method.name):
             if name:
                 method = self._get_shipping_method_by_name(name, basket, shipping_address)
@@ -396,8 +397,7 @@ class ShippingOptionsView(View):
             user = AnonymousUser()
 
         # Create a shipping address instance using the data passed back
-        country_code = self.request.GET.get(
-            'SHIPTOCOUNTRY', None)
+        country_code = self.request.GET.get('SHIPTOCOUNTRY', None)
         try:
             country = Country.objects.get(iso_3166_1_a2=country_code)
         except Country.DoesNotExist:
@@ -412,8 +412,8 @@ class ShippingOptionsView(View):
             country=country
         )
         methods = Repository().get_shipping_methods(
-            basket=basket, shipping_addr=shipping_address,
-            request=self.request, user=user)
+            basket=basket, shipping_addr=shipping_address, request=self.request, user=user
+        )
         return self.render_to_response(methods, basket)
 
     def post(self, request, *args, **kwargs):
@@ -432,8 +432,7 @@ class ShippingOptionsView(View):
             user = AnonymousUser()
 
         # Create a shipping address instance using the data passed back
-        country_code = self.request.POST.get(
-            'SHIPTOCOUNTRY', None)
+        country_code = self.request.POST.get('SHIPTOCOUNTRY', None)
         try:
             country = Country.objects.get(iso_3166_1_a2=country_code)
         except Country.DoesNotExist:
@@ -448,8 +447,8 @@ class ShippingOptionsView(View):
             country=country
         )
         methods = Repository().get_shipping_methods(
-            basket=basket, shipping_addr=shipping_address,
-            request=self.request, user=user)
+            basket=basket, shipping_addr=shipping_address, request=self.request, user=user
+        )
         return self.render_to_response(methods, basket)
 
     def render_to_response(self, methods, basket):
@@ -462,17 +461,14 @@ class ShippingOptionsView(View):
             for index, method in enumerate(methods):
                 charge = method.calculate(basket).incl_tax
 
-                pairs.append(('L_SHIPPINGOPTIONNAME%d' % index,
-                              str(method.name)))
-                pairs.append(('L_SHIPPINGOPTIONLABEL%d' % index,
-                              str(method.description)))
+                pairs.append(('L_SHIPPINGOPTIONNAME%d' % index, str(method.name)))
+                pairs.append(('L_SHIPPINGOPTIONLABEL%d' % index, str(method.description)))
                 pairs.append(('L_SHIPPINGOPTIONAMOUNT%d' % index, charge))
                 # For now, we assume tax and insurance to be zero
                 pairs.append(('L_TAXAMT%d' % index, D('0.00')))
                 pairs.append(('L_INSURANCEAMT%d' % index, D('0.00')))
                 # We assume that the first returned method is the default one
-                pairs.append(('L_SHIPPINGOPTIONISDEFAULT%d' % index,
-                              1 if index == 0 else 0))
+                pairs.append(('L_SHIPPINGOPTIONISDEFAULT%d' % index, 1 if index == 0 else 0))
         else:
             # No shipping methods available - we flag this up to PayPal indicating that we
             # do not ship to the shipping address.
