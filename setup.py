@@ -19,11 +19,19 @@ setup(
     extras_require={'oscar': ['django-oscar>=2.0,<4.0']},
     # See http://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 4 - Beta', 'Environment :: Web Environment', 'Framework :: Django',
-        'Intended Audience :: Developers', 'License :: OSI Approved :: BSD License', 'Operating System :: Unix',
-        'Programming Language :: Python', 'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6', 'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8', 'Programming Language :: Python :: 3.9',
-        'Topic :: Other/Nonlisted Topic'
-    ],
+        'Development Status :: 4 - Beta',
+        'Environment :: Web Environment',
+        'Framework :: Django',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: Unix',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
+        'Topic :: Other/Nonlisted Topic'],
 )
